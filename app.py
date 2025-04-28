@@ -1,54 +1,19 @@
-# Importações
+# Código do app
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import datetime
 import io
 
-# Configuração da página
 st.set_page_config(
-    page_title="Project Model Canvas - TecVitória",
-    page_icon="📋",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Project Model Canvas - Aprenda e Pratique",
+    page_icon="📓",
+    layout="wide"
 )
 
-# Cores e estilos
 PRIMARY_COLOR = "#003366"
-SECONDARY_COLOR = "#FF6600"
-ACCENT_COLOR = "#00CCCC"
 BACKGROUND_COLOR = "#F5F5F5"
 TEXT_COLOR = "#333333"
 
-# Logo da TecVitória
-TECVITORIA_LOGO = "https://tecvitoria.com.br/wp-content/uploads/2025/04/logo-amarelo.webp"
-
-# Templates
-TEMPLATES = {
-    "Selecione um template": {k: "" for k in [
-        'justificativas', 'pitch', 'produto', 'stakeholders', 'premissas', 'riscos',
-        'objetivos', 'requisitos', 'equipe', 'entregas', 'cronograma', 'beneficios',
-        'restricoes', 'custos', 'observacoes']},
-    
-    "Projeto de Inovação": {
-        'justificativas': "Mercado em transformação digital",
-        'pitch': "Desenvolvimento de plataforma para PMEs.",
-        'produto': "Plataforma SaaS modular",
-        'stakeholders': "Diretoria, Departamentos",
-        'premissas': "Equipe alocada, Orçamento aprovado",
-        'riscos': "Atraso na aprovação",
-        'objetivos': "Lançar MVP até 30/09/2024",
-        'requisitos': "Integração bancária, Segurança de dados",
-        'equipe': "GP: Ana Silva, Tech: Carlos Souza",
-        'entregas': "Especificação e Módulo financeiro",
-        'cronograma': "Especificação e Desenvolvimento",
-        'beneficios': "Redução de 30% de processos",
-        'restricoes': "Orçamento: R$ 1.8M",
-        'custos': "Desenvolvimento: R$ 1.2M",
-        'observacoes': ""
-    }
-}
-
-# Função para gerar Canvas visual
 def generate_canvas_image(data):
     canvas_width = 1754
     canvas_height = 1240
@@ -78,80 +43,74 @@ def generate_canvas_image(data):
         ("Observações", (50, 1210, 1700, 1230))
     ]
 
-    # Título principal
     draw.text((canvas_width // 2 - 300, 20), f"Project Model Canvas - {data.get('nome_projeto', '')}", font=font, fill=(0, 51, 102))
 
     for title, box in sections:
         draw.rectangle(box, outline=(0, 0, 0), fill=(240, 240, 240), width=2)
-        text_x = box[0] + 10
-        text_y = box[1] + 10
-        conteudo = data.get(title.lower(), title)
-        draw.text((text_x, text_y), f"{title}", font=font, fill=(0, 51, 102))
+        draw.text((box[0] + 10, box[1] + 10), title, font=font, fill=(0, 51, 102))
 
     return img
 
-# Inicialização do estado
 if 'dados' not in st.session_state:
-    st.session_state.dados = {
-        'nome_projeto': '',
-        'responsavel': '',
-        'data': datetime.date.today().strftime("%d/%m/%Y"),
-        'justificativas': '', 'pitch': '', 'produto': '', 'stakeholders': '',
-        'premissas': '', 'riscos': '', 'objetivos': '', 'requisitos': '',
-        'equipe': '', 'entregas': '', 'cronograma': '', 'beneficios': '',
-        'restricoes': '', 'custos': '', 'observacoes': ''
-    }
+    st.session_state.dados = {campo: '' for campo in [
+        'nome_projeto', 'responsavel', 'data',
+        'justificativas', 'pitch', 'produto', 'stakeholders', 'premissas', 'riscos',
+        'objetivos', 'requisitos', 'equipe', 'entregas', 'cronograma', 'beneficios',
+        'restricoes', 'custos', 'observacoes']}
+    st.session_state.dados['data'] = datetime.date.today().strftime("%d/%m/%Y")
 
-# Sidebar
-with st.sidebar:
-    st.image(TECVITORIA_LOGO, width=200)
-    st.title("Informações do Projeto")
-    
-    st.session_state.dados['nome_projeto'] = st.text_input("Nome do Projeto*", value=st.session_state.dados['nome_projeto'])
-    st.session_state.dados['responsavel'] = st.text_input("Responsável*", value=st.session_state.dados['responsavel'])
-    data_input = st.date_input("Data*", value=datetime.datetime.strptime(st.session_state.dados['data'], "%d/%m/%Y").date())
-    st.session_state.dados['data'] = data_input.strftime("%d/%m/%Y")
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📚 Aprenda", "📄 Templates", "📦 Casos Reais", "🔄 Canvas Interativo", "🧠 Módulo Avançado"])
 
-    st.markdown("---")
-    st.subheader("Templates")
-    template_select = st.selectbox("Escolher Template", list(TEMPLATES.keys()))
-    
-    if st.button("Aplicar Template") and template_select != "Selecione um template":
-        st.session_state.dados.update(TEMPLATES[template_select])
+with tab1:
+    st.header("Fundamentos do Project Model Canvas")
+    st.markdown("""
+    O **Project Model Canvas** é uma ferramenta visual para o planejamento de projetos com base em perguntas fundamentais.
+    """)
 
-# Corpo principal
-st.title("Project Model Canvas")
+with tab2:
+    st.header("Templates para Preenchimento")
+    st.info("Templates serão disponibilizados para download.")
 
-# Formulário
-with st.form("formulario"):
-    col1, col2 = st.columns(2)
+with tab3:
+    st.header("Exemplos Reais de Aplicação")
+    st.image("cases/crm_case.png", caption="Case Business CRM")
+    st.image("cases/nemo_case.png", caption="Case Procurando Nemo")
+    st.image("cases/legal_case.png", caption="Case Serviços Jurídicos")
 
-    with col1:
-        for campo in ['justificativas', 'pitch', 'objetivos', 'produto', 'premissas', 'riscos', 'restricoes']:
-            st.session_state.dados[campo] = st.text_area(campo.capitalize(), value=st.session_state.dados[campo])
+with tab4:
+    st.header("Crie seu Canvas")
+    with st.form("formulario"):
+        st.session_state.dados['nome_projeto'] = st.text_input("Nome do Projeto*", value=st.session_state.dados['nome_projeto'])
+        st.session_state.dados['responsavel'] = st.text_input("Responsável*", value=st.session_state.dados['responsavel'])
+        st.session_state.dados['data'] = st.date_input("Data", datetime.datetime.strptime(st.session_state.dados['data'], "%d/%m/%Y")).strftime("%d/%m/%Y")
 
-    with col2:
-        for campo in ['stakeholders', 'requisitos', 'entregas', 'cronograma', 'equipe', 'beneficios', 'custos', 'observacoes']:
-            st.session_state.dados[campo] = st.text_area(campo.capitalize(), value=st.session_state.dados[campo])
+        col1, col2 = st.columns(2)
+        with col1:
+            for campo in ['justificativas', 'pitch', 'objetivos', 'produto', 'premissas', 'riscos', 'restricoes']:
+                st.session_state.dados[campo] = st.text_area(campo.capitalize(), value=st.session_state.dados[campo])
+        with col2:
+            for campo in ['stakeholders', 'requisitos', 'entregas', 'cronograma', 'equipe', 'beneficios', 'custos', 'observacoes']:
+                st.session_state.dados[campo] = st.text_area(campo.capitalize(), value=st.session_state.dados[campo])
 
-    submitted = st.form_submit_button("Atualizar Canvas")
+        submitted = st.form_submit_button("Gerar Canvas")
 
-# Visualizar Canvas
-if st.session_state.dados['nome_projeto']:
-    canvas_img = generate_canvas_image(st.session_state.dados)
-    buf = io.BytesIO()
-    canvas_img.save(buf, format="PNG")
-    st.image(canvas_img, caption="Visualização do Canvas", use_column_width=True)
+    if st.session_state.dados['nome_projeto']:
+        canvas_img = generate_canvas_image(st.session_state.dados)
+        buf = io.BytesIO()
+        canvas_img.save(buf, format="PNG")
+        st.image(canvas_img, caption="Visualização do Canvas", use_column_width=True)
+        st.download_button(
+            label="💾 Baixar Canvas como PNG",
+            data=buf.getvalue(),
+            file_name=f"canvas_{st.session_state.dados['nome_projeto'].replace(' ', '_')}.png",
+            mime="image/png"
+        )
+    else:
+        st.warning("Preencha o nome do projeto para visualizar o Canvas.")
 
-    st.download_button(
-        label="💾 Baixar Canvas como PNG",
-        data=buf.getvalue(),
-        file_name=f"canvas_{st.session_state.dados['nome_projeto'].replace(' ', '_')}.png",
-        mime="image/png"
-    )
-else:
-    st.warning("Preencha o nome do projeto para gerar o Canvas.")
+with tab5:
+    st.header("Módulo Avançado: Estruturação Detalhada")
+    st.info("Conteúdo complementar avançado será disponibilizado.")
 
-# Rodapé
 st.markdown("---")
-st.markdown("<p style='text-align:center;'>© 2024 TecVitória</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;'>© 2024 Projeto Canvas - Educação e Inovação</p>", unsafe_allow_html=True)
