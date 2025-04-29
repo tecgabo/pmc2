@@ -1,22 +1,18 @@
 # Project Model Canvas - Versão 2
 
-Esta aplicação foi desenvolvida para estruturar projetos de forma simples, visual e prática utilizando o Project Model Canvas.
+Esta aplicação ajuda a estruturar projetos desde a ideia inicial até planejamento avançado.
 
-## Recursos Disponíveis
-- Aprendizado sobre o modelo.
-- Criação interativa de Canvas.
-- Templates e exemplos reais.
-- Módulo Avançado para planejamento detalhado (EAP, cronograma, riscos, comunicação).
-- Exportação dos documentos gerados.
+## Recursos
+- Criação de Project Model Canvas
+- Templates e exemplos reais
+- Planejamento avançado (EAP, cronograma, riscos)
+- Exportação de documentos
 
-## Como rodar localmente
+## Como usar
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Deploy
-Ideal para publicação no Streamlit Cloud ou ambientes similares.
-
 ---
-Desenvolvido com ❤️ para ajudar na construção de projetos de sucesso!
+Feito para transformar boas ideias em grandes projetos! 🚀

@@ -30,11 +30,35 @@ if menu == "🏠 Início":
     st.title("📓 Project Model Canvas - Versão 2")
     st.subheader("Bem-vindo!")
     st.markdown("""
-    ### O que você encontrará aqui:
-    - Aprenda o que é o **Project Model Canvas** baseado na obra de José Finocchio Jr.
-    - Estruture projetos de maneira visual, prática e estratégica.
-    - Acesse templates e exemplos reais.
-    - Construa seu projeto completo, desde o Canvas até a EAP, cronograma e plano de comunicação.
-    - Prepare seu projeto para ser avaliado e valorizado!
+    ### Sobre o Project Model Canvas
+    O Project Model Canvas é uma ferramenta visual para estruturar projetos de forma prática e colaborativa.
+    
+    Baseado na obra de José Finocchio Jr., ele permite:
+    - Organizar ideias iniciais de um projeto.
+    - Visualizar conexões entre entregas, riscos, custos e benefícios.
+    - Acelerar o entendimento de escopo, prazos e valor.
+    
+    ### Como navegar:
+    Use o menu lateral para criar seu Canvas, explorar templates, visualizar exemplos e desenvolver seu projeto até uma estrutura profissional!
     """)
-    st.info("Use o menu à esquerda para começar a criar seu projeto! 🚀")
+    st.info("Comece seu projeto com organização e propósito! 🚀")
+
+# Placeholder para Criar Canvas
+elif menu == "📝 Criar Canvas":
+    st.title("📝 Criar seu Project Model Canvas")
+    st.warning("Formulário de criação interativa do Canvas - Em construção.")
+
+# Placeholder para Templates e Exemplos
+elif menu == "📦 Templates e Exemplos":
+    st.title("📦 Templates e Exemplos Reais")
+    st.warning("Área de templates prontos para prática - Em construção.")
+
+# Placeholder para Módulo Avançado
+elif menu == "🛠️ Módulo Avançado":
+    st.title("🛠️ Planejamento Avançado")
+    st.warning("Geração de EAP, cronogramas e planos - Em construção.")
+
+# Placeholder para Exportações
+elif menu == "📥 Exportações":
+    st.title("📥 Exportação de Documentos")
+    st.warning("Download de Canvas e documentos auxiliares - Em construção.")
