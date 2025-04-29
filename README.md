@@ -1,15 +1,15 @@
-# Project Model Canvas - PRO Edition - Atualizado
+# Project Model Canvas - PRO Edition (Exportação Completa)
 
-Ferramenta prática para desenvolvimento e planejamento de projetos baseada no Project Model Canvas.
+App que permite criar, planejar e exportar projetos usando o Project Model Canvas.
 
-## Recursos
-- Criação de Canvas
-- Aplicação de Templates e Exemplos
-- Geração de Estrutura Analítica (EAP)
-- Barra de progresso de preenchimento
-- Futuras exportações em PNG/PDF
+## Funcionalidades
+- Criação interativa do Canvas
+- Geração de:
+  - Imagem do Canvas (.png)
+  - Resumo Executivo (.pdf)
+  - Termo de Abertura (.docx)
 
-## Instalação
+## Instruções
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
