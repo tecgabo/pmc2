@@ -1,8 +1,13 @@
-# Importações
+# Importações necessárias
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
-import datetime
 import io
+import datetime
+import textwrap
+import base64
+from fpdf import FPDF  # Para geração de PDF profissional
+import json  # Para salvar projetos
+import os
 
 # Configuração da página
 st.set_page_config(
@@ -12,146 +17,661 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Cores e estilos
-PRIMARY_COLOR = "#003366"
-SECONDARY_COLOR = "#FF6600"
-ACCENT_COLOR = "#00CCCC"
-BACKGROUND_COLOR = "#F5F5F5"
-TEXT_COLOR = "#333333"
+# Cores e estilos atualizadas
+COLORS = {
+    "primary": "#003366",
+    "secondary": "#FF6600",
+    "accent": "#00CCCC",
+    "background": "#F5F5F5",
+    "text": "#333333",
+    "success": "#28a745",
+    "warning": "#ffc107",
+    "danger": "#dc3545"
+}
 
-# Logo da TecVitória
+# URL do logo da TecVitória
 TECVITORIA_LOGO = "https://tecvitoria.com.br/wp-content/uploads/2025/04/logo-amarelo.webp"
 
-# Templates
+# Templates atualizados e expandidos
 TEMPLATES = {
     "Selecione um template": {k: "" for k in [
-        'justificativas', 'pitch', 'produto', 'stakeholders', 'premissas', 'riscos',
-        'objetivos', 'requisitos', 'equipe', 'entregas', 'cronograma', 'beneficios',
+        'justificativas', 'pitch', 'produto', 'stakeholders', 'premissas', 'riscos', 
+        'objetivos', 'requisitos', 'equipe', 'entregas', 'cronograma', 'beneficios', 
         'restricoes', 'custos', 'observacoes']},
     
     "Projeto de Inovação": {
-        'justificativas': "Mercado em transformação digital",
-        'pitch': "Desenvolvimento de plataforma para PMEs.",
-        'produto': "Plataforma SaaS modular",
-        'stakeholders': "Diretoria, Departamentos",
-        'premissas': "Equipe alocada, Orçamento aprovado",
-        'riscos': "Atraso na aprovação",
-        'objetivos': "Lancar MVP até 30/09/2024",
-        'requisitos': "Integração bancária, Segurança de dados",
-        'equipe': "GP: Ana Silva, Tech: Carlos Souza",
-        'entregas': "Especificação e Módulo financeiro",
-        'cronograma': "Especificação e Desenvolvimento",
-        'beneficios': "Redução de 30% de processos",
-        'restricoes': "Orçamento: R$ 1.8M",
-        'custos': "Desenvolvimento: R$ 1.2M",
-        'observacoes': ""
+        'justificativas': "• Mercado em transformação digital\n• Concorrência lançou novo produto",
+        'pitch': "Desenvolvimento de plataforma integrada de gestão para PMEs.",
+        'produto': "• Plataforma SaaS modular\n• Integração com bancos e marketplaces",
+        'stakeholders': "• Diretoria Executiva\n• Líderes de departamento",
+        'premissas': "• Equipe permanecerá alocada\n• Orçamento aprovado",
+        'riscos': "• Atraso na aprovação [Prob: Média] [Impacto: Alto]",
+        'objetivos': "• Lançar MVP até 30/09/2024\n• Captar 100 clientes em 6 meses",
+        'requisitos': "[MUST] Integração com bancos\n[MUST] Segurança de dados\n[SHOULD] Interface mobile",
+        'equipe': "• GP: Ana Silva\n• Tech Lead: Carlos Souza\n• UX: Mariana Costa",
+        'entregas': "1. Especificação técnica\n2. Módulo financeiro\n3. Painel administrativo",
+        'cronograma': "• F1 (M1-2): Especificação\n• F2 (M3-5): Desenvolvimento\n• F3 (M6): Testes",
+        'beneficios': "• Redução de 30% em processos manuais\n• Ganho de produtividade",
+        'restricoes': "• Orçamento: R$ 1.8M\n• Prazo: 7 meses\n• Equipe: 5 pessoas",
+        'custos': "• Desenvolvimento: R$ 1.2M\n• Infra: R$ 300k\n• Marketing: R$ 200k",
+        'observacoes': "Parceria com universidade para pesquisa de UX"
+    },
+    
+    "Evento Corporativo": {
+        'justificativas': "• Alinhamento da equipe\n• Lançamento de novo produto",
+        'pitch': "Realização de evento anual para 300 colaboradores com foco em inovação.",
+        'produto': "• Evento presencial de 2 dias\n• Palestras e workshops",
+        'stakeholders': "• CEO\n• RH\n• Comunicação\n• Fornecedores",
+        'premissas': "• Local disponível\n• Data aprovada",
+        'riscos': "• Baixa adesão [Prob: Baixa] [Impacto: Médio]",
+        'objetivos': "• 80% de satisfação\n• 95% de participação",
+        'requisitos': "[MUST] Streaming ao vivo\n[MUST] Acessibilidade",
+        'equipe': "• Coordenador: João Silva\n• Logística: Maria Souza",
+        'entregas': "1. Plano de evento\n2. Contratação de palestrantes",
+        'cronograma': "• M1: Planejamento\n• M2: Divulgação\n• M3: Execução",
+        'beneficios': "• Engajamento da equipe\n• Alinhamento estratégico",
+        'restricoes': "• Orçamento: R$ 150k\n• Data fixa: 15/11",
+        'custos': "• Local: R$ 50k\n• Palestrantes: R$ 40k",
+        'observacoes': "Possível patrocínio externo"
     }
 }
 
-# Função para gerar Canvas visual
-def generate_canvas_image(data):
-    canvas_width = 1754
-    canvas_height = 1240
-    img = Image.new('RGB', (canvas_width, canvas_height), color=(255, 255, 255))
-    draw = ImageDraw.Draw(img)
+# CSS personalizado atualizado
+st.markdown(f"""
+<style>
+    .stApp {{
+        background-color: {COLORS['background']};
+    }}
+    .header {{
+        background: linear-gradient(135deg, {COLORS['primary']}, {COLORS['accent']});
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }}
+    .sidebar-logo {{
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }}
+    .required-field::after {{
+        content: " *";
+        color: {COLORS['danger']};
+    }}
+    .template-card {{
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid {COLORS['secondary']};
+        transition: transform 0.2s;
+    }}
+    .template-card:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }}
+    .guide-section {{
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }}
+    .canvas-container {{
+        background-color: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }}
+    .stButton>button {{
+        background-color: {COLORS['primary']};
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s;
+    }}
+    .stButton>button:hover {{
+        background-color: {COLORS['secondary']};
+        transform: scale(1.02);
+    }}
+    .risk-high {{
+        color: {COLORS['danger']};
+        font-weight: bold;
+    }}
+    .risk-medium {{
+        color: {COLORS['warning']};
+        font-weight: bold;
+    }}
+    .risk-low {{
+        color: {COLORS['success']};
+    }}
+    .tab-content {{
+        padding: 1.5rem 0;
+    }}
+</style>
+""", unsafe_allow_html=True)
 
+# Função para gerar o canvas visual melhorado
+def generate_canvas(data):
+    # Criar uma imagem em branco (A3 em 300dpi)
+    img = Image.new('RGB', (3508, 2480), color=(255, 255, 255))
+    d = ImageDraw.Draw(img)
+    
     try:
-        font = ImageFont.truetype("arial.ttf", 24)
+        title_font = ImageFont.truetype("arial.ttf", 72)
+        section_font = ImageFont.truetype("arial.ttf", 48)
+        content_font = ImageFont.truetype("arial.ttf", 36)
     except:
-        font = ImageFont.load_default()
-
+        title_font = ImageFont.load_default()
+        section_font = ImageFont.load_default()
+        content_font = ImageFont.load_default()
+    
+    # Título
+    d.text((100, 100), f"Project Model Canvas", font=title_font, fill=COLORS['primary'])
+    d.text((100, 200), f"Projeto: {data.get('nome_projeto', '')}", font=title_font, fill=COLORS['primary'])
+    d.text((100, 300), f"Responsável: {data.get('responsavel', '')} | Data: {data.get('data', '')}", 
+           font=content_font, fill=COLORS['text'])
+    
+    # Desenhar grid do canvas (9 quadrantes)
+    # Linhas horizontais
+    d.line([(100, 500), (3408, 500)], fill=COLORS['primary'], width=5)
+    d.line([(100, 1500), (3408, 1500)], fill=COLORS['primary'], width=5)
+    
+    # Linhas verticais
+    d.line([(1200, 500), (1200, 2480)], fill=COLORS['primary'], width=5)
+    d.line([(2300, 500), (2300, 2480)], fill=COLORS['primary'], width=5)
+    
+    # Preencher quadrantes
     sections = [
-        ("Justificativas", (50, 100, 850, 250)),
-        ("Pitch", (900, 100, 1700, 250)),
-        ("Produto/Serviço", (50, 300, 850, 450)),
-        ("Stakeholders", (900, 300, 1700, 450)),
-        ("Premissas", (50, 500, 850, 600)),
-        ("Riscos", (900, 500, 1700, 600)),
-        ("Objetivos", (50, 650, 850, 750)),
-        ("Requisitos", (900, 650, 1700, 750)),
-        ("Equipe", (50, 800, 850, 900)),
-        ("Entregas", (900, 800, 1700, 900)),
-        ("Cronograma", (50, 950, 850, 1050)),
-        ("Benefícios", (900, 950, 1700, 1050)),
-        ("Restrições", (50, 1100, 850, 1200)),
-        ("Custos", (900, 1100, 1700, 1200)),
-        ("Observações", (50, 1210, 1700, 1230))
+        # Linha 1
+        {"pos": (150, 550), "title": "Justificativas", "content": data.get('justificativas', '')},
+        {"pos": (1250, 550), "title": "Pitch", "content": data.get('pitch', '')},
+        {"pos": (2350, 550), "title": "Produto/Serviço", "content": data.get('produto', '')},
+        
+        # Linha 2
+        {"pos": (150, 1550), "title": "Stakeholders", "content": data.get('stakeholders', '')},
+        {"pos": (1250, 1550), "title": "Premissas", "content": data.get('premissas', '')},
+        {"pos": (2350, 1550), "title": "Riscos", "content": data.get('riscos', '')},
+        
+        # Linha 3
+        {"pos": (150, 2100), "title": "Objetivos", "content": data.get('objetivos', '')},
+        {"pos": (1250, 2100), "title": "Requisitos", "content": data.get('requisitos', '')},
+        {"pos": (2350, 2100), "title": "Equipe", "content": data.get('equipe', '')}
     ]
-
-    # Título principal
-    draw.text((canvas_width // 2 - 300, 20), f"Project Model Canvas - {data.get('nome_projeto', '')}", font=font, fill=(0, 51, 102))
-
-    for title, box in sections:
-        draw.rectangle(box, outline=(0, 0, 0), fill=(240, 240, 240), width=2)
-        text_x = box[0] + 10
-        text_y = box[1] + 10
-        conteudo = data.get(title.lower(), title)
-        draw.text((text_x, text_y), f"{title}", font=font, fill=(0, 51, 102))
-
+    
+    for section in sections:
+        x, y = section['pos']
+        # Título da seção
+        d.text((x, y), section['title'], font=section_font, fill=COLORS['secondary'])
+        
+        # Conteúdo da seção (com quebra de linha)
+        y += 80
+        for line in section['content'].split('\n'):
+            d.text((x, y), line, font=content_font, fill=COLORS['text'])
+            y += 50
+    
     return img
 
-# Inicialização do estado
+# Função para gerar PDF profissional
+def generate_pdf(data):
+    pdf = FPDF(orientation='L', unit='mm', format='A3')
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # Configurações de fonte
+    pdf.add_font('Arial', '', 'arial.ttf', uni=True)
+    pdf.set_font('Arial', '', 12)
+    
+    # Cabeçalho
+    pdf.set_font('Arial', 'B', 24)
+    pdf.cell(0, 15, "Project Model Canvas", 0, 1, 'C')
+    pdf.set_font('Arial', 'B', 18)
+    pdf.cell(0, 15, f"Projeto: {data.get('nome_projeto', '')}", 0, 1, 'C')
+    pdf.set_font('Arial', '', 14)
+    pdf.cell(0, 10, f"Responsável: {data.get('responsavel', '')} | Data: {data.get('data', '')}", 0, 1, 'C')
+    pdf.ln(10)
+    
+    # Configurar cores
+    pdf.set_draw_color(0, 51, 102)  # Cor primária
+    pdf.set_line_width(0.5)
+    
+    # Criar grid (3x3)
+    col_width = pdf.w / 3 - 15
+    row_height = pdf.h / 3 - 30
+    
+    sections = [
+        {"title": "Justificativas", "content": data.get('justificativas', '')},
+        {"title": "Pitch", "content": data.get('pitch', '')},
+        {"title": "Produto/Serviço", "content": data.get('produto', '')},
+        {"title": "Stakeholders", "content": data.get('stakeholders', '')},
+        {"title": "Premissas", "content": data.get('premissas', '')},
+        {"title": "Riscos", "content": data.get('riscos', '')},
+        {"title": "Objetivos", "content": data.get('objetivos', '')},
+        {"title": "Requisitos", "content": data.get('requisitos', '')},
+        {"title": "Equipe", "content": data.get('equipe', '')}
+    ]
+    
+    for i in range(3):  # Linhas
+        for j in range(3):  # Colunas
+            x = 10 + j * (col_width + 5)
+            y = 50 + i * (row_height + 5)
+            
+            # Desenhar caixa
+            pdf.rect(x, y, col_width, row_height)
+            
+            # Adicionar título
+            pdf.set_font('Arial', 'B', 16)
+            pdf.set_xy(x + 5, y + 5)
+            pdf.cell(col_width - 10, 10, sections[i*3 + j]['title'], 0, 1)
+            
+            # Adicionar conteúdo
+            pdf.set_font('Arial', '', 12)
+            pdf.set_xy(x + 5, y + 20)
+            pdf.multi_cell(col_width - 10, 8, sections[i*3 + j]['content'])
+    
+    # Seções adicionais
+    pdf.add_page()
+    pdf.set_font('Arial', 'B', 16)
+    pdf.cell(0, 10, "Detalhes Adicionais", 0, 1)
+    pdf.ln(5)
+    
+    additional_sections = [
+        {"title": "Entregas", "content": data.get('entregas', '')},
+        {"title": "Cronograma", "content": data.get('cronograma', '')},
+        {"title": "Benefícios", "content": data.get('beneficios', '')},
+        {"title": "Restrições", "content": data.get('restricoes', '')},
+        {"title": "Custos", "content": data.get('custos', '')},
+        {"title": "Observações", "content": data.get('observacoes', '')}
+    ]
+    
+    for i in range(0, len(additional_sections), 2):
+        # Duas colunas
+        if i < len(additional_sections):
+            pdf.set_font('Arial', 'B', 14)
+            pdf.cell(pdf.w / 2 - 10, 10, additional_sections[i]['title'], 0, 0)
+            if i+1 < len(additional_sections):
+                pdf.cell(pdf.w / 2 - 10, 10, additional_sections[i+1]['title'], 0, 1)
+            else:
+                pdf.ln()
+            
+            pdf.set_font('Arial', '', 12)
+            pdf.multi_cell(pdf.w / 2 - 10, 8, additional_sections[i]['content'])
+            pdf.set_xy(pdf.w / 2 + 10, pdf.get_y() - pdf.font_size * len(additional_sections[i]['content'].split('\n')))
+            if i+1 < len(additional_sections):
+                pdf.multi_cell(pdf.w / 2 - 10, 8, additional_sections[i+1]['content'])
+            pdf.ln(10)
+    
+    # Rodapé
+    pdf.set_y(-15)
+    pdf.set_font('Arial', 'I', 8)
+    pdf.cell(0, 10, f"Gerado por TecVitória em {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}", 0, 0, 'C')
+    
+    return pdf.output(dest='S').encode('latin1')
+
+# Função para salvar projeto
+def save_project(data, filename):
+    with open(filename, 'w') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+# Função para carregar projeto
+def load_project(filename):
+    with open(filename, 'r') as f:
+        return json.load(f)
+
+# Inicializar session_state
 if 'dados' not in st.session_state:
     st.session_state.dados = {
         'nome_projeto': '',
         'responsavel': '',
         'data': datetime.date.today().strftime("%d/%m/%Y"),
-        'justificativas': '', 'pitch': '', 'produto': '', 'stakeholders': '',
-        'premissas': '', 'riscos': '', 'objetivos': '', 'requisitos': '',
-        'equipe': '', 'entregas': '', 'cronograma': '', 'beneficios': '',
-        'restricoes': '', 'custos': '', 'observacoes': ''
+        'justificativas': '',
+        'pitch': '',
+        'produto': '',
+        'stakeholders': '',
+        'premissas': '',
+        'riscos': '',
+        'objetivos': '',
+        'requisitos': '',
+        'equipe': '',
+        'entregas': '',
+        'cronograma': '',
+        'beneficios': '',
+        'restricoes': '',
+        'custos': '',
+        'observacoes': ''
     }
 
-# Sidebar
+# Sidebar atualizada
 with st.sidebar:
-    st.image(TECVITORIA_LOGO, width=200)
-    st.title("Informações do Projeto")
+    st.markdown(f"""
+    <div class="sidebar-logo">
+        <img src="{TECVITORIA_LOGO}" width="200" alt="TecVitória">
+    </div>
+    """, unsafe_allow_html=True)
     
-    st.session_state.dados['nome_projeto'] = st.text_input("Nome do Projeto*", value=st.session_state.dados['nome_projeto'])
-    st.session_state.dados['responsavel'] = st.text_input("Responsável*", value=st.session_state.dados['responsavel'])
-    data_input = st.date_input("Data*", value=datetime.datetime.strptime(st.session_state.dados['data'], "%d/%m/%Y").date())
-    st.session_state.dados['data'] = data_input.strftime("%d/%m/%Y")
-
-    st.markdown("---")
-    st.subheader("Templates")
-    template_select = st.selectbox("Escolher Template", list(TEMPLATES.keys()))
+    st.markdown("### Informações Básicas")
     
-    if st.button("Aplicar Template") and template_select != "Selecione um template":
-        st.session_state.dados.update(TEMPLATES[template_select])
-
-# Corpo principal
-st.title("Project Model Canvas")
-
-# Formulário
-with st.form("formulario"):
-    col1, col2 = st.columns(2)
-
-    with col1:
-        for campo in ['justificativas', 'pitch', 'objetivos', 'produto', 'premissas', 'riscos', 'restricoes']:
-            st.session_state.dados[campo] = st.text_area(campo.capitalize(), value=st.session_state.dados[campo])
-
-    with col2:
-        for campo in ['stakeholders', 'requisitos', 'entregas', 'cronograma', 'equipe', 'beneficios', 'custos', 'observacoes']:
-            st.session_state.dados[campo] = st.text_area(campo.capitalize(), value=st.session_state.dados[campo])
-
-    submitted = st.form_submit_button("Atualizar Canvas")
-
-# Visualizar Canvas
-if st.session_state.dados['nome_projeto']:
-    canvas_img = generate_canvas_image(st.session_state.dados)
-    buf = io.BytesIO()
-    canvas_img.save(buf, format="PNG")
-    st.image(canvas_img, caption="Visualização do Canvas", use_column_width=True)
-
-    st.download_button(
-        label="💾 Baixar Canvas como PNG",
-        data=buf.getvalue(),
-        file_name=f"canvas_{st.session_state.dados['nome_projeto'].replace(' ', '_')}.png",
-        mime="image/png"
+    st.session_state.dados['nome_projeto'] = st.text_input(
+        "Nome do Projeto*",
+        value=st.session_state.dados['nome_projeto'],
+        help="Nome completo do projeto conforme registro oficial"
     )
-else:
-    st.warning("Preencha o nome do projeto para gerar o Canvas.")
+    
+    st.session_state.dados['responsavel'] = st.text_input(
+        "Responsável*",
+        value=st.session_state.dados['responsavel'],
+        help="Nome do gerente ou líder do projeto"
+    )
+    
+    data_input = st.date_input(
+        "Data*",
+        value=datetime.datetime.strptime(st.session_state.dados['data'], "%d/%m/%Y").date(),
+        format="DD/MM/YYYY"
+    )
+    st.session_state.dados['data'] = data_input.strftime("%d/%m/%Y")
+    
+    st.markdown("---")
+    st.markdown("### Gerenciamento de Projetos")
+    
+    # Upload de projeto existente
+    uploaded_file = st.file_uploader("Carregar projeto salvo", type=['json'])
+    if uploaded_file is not None:
+        try:
+            st.session_state.dados = load_project(uploaded_file)
+            st.success("Projeto carregado com sucesso!")
+        except Exception as e:
+            st.error(f"Erro ao carregar projeto: {str(e)}")
+    
+    # Download do projeto atual
+    if st.session_state.dados['nome_projeto']:
+        project_json = json.dumps(st.session_state.dados, indent=2, ensure_ascii=False)
+        st.download_button(
+            label="💾 Salvar Projeto",
+            data=project_json,
+            file_name=f"project_{st.session_state.dados['nome_projeto'].lower().replace(' ', '_')}.json",
+            mime="application/json"
+        )
+    
+    st.markdown("---")
+    st.markdown("### Templates")
+    
+    selected_template = st.selectbox(
+        "Carregar template:",
+        list(TEMPLATES.keys()),
+        help="Selecione um modelo pré-definido para iniciar seu canvas"
+    )
+    
+    if st.button("Aplicar Template", key="apply_template") and selected_template != "Selecione um template":
+        st.session_state.dados.update(TEMPLATES[selected_template])
+        st.success(f"Template '{selected_template}' carregado com sucesso!")
+    
+    if st.button("🔄 Limpar Formulário", key="clear_form"):
+        for key in st.session_state.dados:
+            st.session_state.dados[key] = ""
+        st.session_state.dados['data'] = datetime.date.today().strftime("%d/%m/%Y")
+        st.rerun()
+
+# Página principal com abas
+tab1, tab2, tab3, tab4 = st.tabs(["📝 Formulário Completo", "🖼️ Visualização do Canvas", "📚 Biblioteca de Templates", "ℹ️ Guia & Recursos"])
+
+with tab1:
+    st.markdown(f"### Formulário do Projeto: {st.session_state.dados['nome_projeto'] or 'Sem nome'}")
+    
+    cols = st.columns(2)
+    
+    with cols[0]:
+        st.markdown("#### 🎯 Propósito do Projeto")
+        st.session_state.dados['justificativas'] = st.text_area(
+            "Justificativas*",
+            value=st.session_state.dados['justificativas'],
+            height=150,
+            placeholder="Por que este projeto existe?\n• Razão 1\n• Razão 2"
+        )
+        
+        st.session_state.dados['pitch'] = st.text_area(
+            "Pitch*",
+            value=st.session_state.dados['pitch'],
+            height=100,
+            placeholder="Resuma seu projeto em 1-2 frases impactantes"
+        )
+        
+        st.session_state.dados['objetivos'] = st.text_area(
+            "Objetivos*",
+            value=st.session_state.dados['objetivos'],
+            height=150,
+            placeholder="O que o projeto deve alcançar?\n• Objetivo 1\n• Objetivo 2"
+        )
+        
+        st.markdown("#### 🛠️ O Que Será Entregue")
+        st.session_state.dados['produto'] = st.text_area(
+            "Produto/Serviço*",
+            value=st.session_state.dados['produto'],
+            height=150,
+            placeholder="Descreva o produto/serviço resultante\n• Característica 1\n• Característica 2"
+        )
+    
+    with cols[1]:
+        st.markdown("#### 👥 Partes Interessadas")
+        st.session_state.dados['stakeholders'] = st.text_area(
+            "Stakeholders*",
+            value=st.session_state.dados['stakeholders'],
+            height=120,
+            placeholder="Quem são os principais interessados?\n• Stakeholder 1\n• Stakeholder 2"
+        )
+        
+        st.markdown("#### 📋 Especificações")
+        st.session_state.dados['requisitos'] = st.text_area(
+            "Requisitos*",
+            value=st.session_state.dados['requisitos'],
+            height=120,
+            placeholder="[MUST] Requisito obrigatório\n[SHOULD] Requisito desejável\n[COULD] Requisito opcional"
+        )
+        
+        st.markdown("#### 🚀 Plano de Entrega")
+        st.session_state.dados['entregas'] = st.text_area(
+            "Entregas*",
+            value=st.session_state.dados['entregas'],
+            height=120,
+            placeholder="Principais entregas/marcos\n1. Entrega 1\n2. Entrega 2"
+        )
+        
+        st.session_state.dados['cronograma'] = st.text_area(
+            "Cronograma*",
+            value=st.session_state.dados['cronograma'],
+            height=120,
+            placeholder="Fases e prazos estimados\n• Fase 1: M1-M2\n• Fase 2: M3-M5"
+        )
+    
+    st.markdown("#### 🧭 Contexto do Projeto")
+    cols_context = st.columns(3)
+    
+    with cols_context[0]:
+        st.session_state.dados['premissas'] = st.text_area(
+            "Premissas",
+            value=st.session_state.dados['premissas'],
+            height=120,
+            placeholder="Suposições iniciais\n• Premissa 1\n• Premissa 2"
+        )
+    
+    with cols_context[1]:
+        st.session_state.dados['riscos'] = st.text_area(
+            "Riscos",
+            value=st.session_state.dados['riscos'],
+            height=120,
+            placeholder="Possíveis riscos e impactos\n• Risco [Prob: Alta] [Impacto: Alto]"
+        )
+    
+    with cols_context[2]:
+        st.session_state.dados['restricoes'] = st.text_area(
+            "Restrições",
+            value=st.session_state.dados['restricoes'],
+            height=120,
+            placeholder="Limitações conhecidas\n• Restrição 1\n• Restrição 2"
+        )
+    
+    st.markdown("#### 🏗️ Estrutura do Projeto")
+    cols_org = st.columns(3)
+    
+    with cols_org[0]:
+        st.session_state.dados['equipe'] = st.text_area(
+            "Equipe",
+            value=st.session_state.dados['equipe'],
+            height=120,
+            placeholder="Membros principais\n• Função: Nome\n• Função: Nome"
+        )
+    
+    with cols_org[1]:
+        st.session_state.dados['beneficios'] = st.text_area(
+            "Benefícios",
+            value=st.session_state.dados['beneficios'],
+            height=120,
+            placeholder="Benefícios esperados\n• Benefício 1\n• Benefício 2"
+        )
+    
+    with cols_org[2]:
+        st.session_state.dados['custos'] = st.text_area(
+            "Custos",
+            value=st.session_state.dados['custos'],
+            height=120,
+            placeholder="Estimativa de custos\n• Categoria: Valor\n• Categoria: Valor"
+        )
+    
+    st.session_state.dados['observacoes'] = st.text_area(
+        "Observações Adicionais",
+        value=st.session_state.dados['observacoes'],
+        height=100,
+        placeholder="Qualquer informação adicional relevante"
+    )
+
+with tab2:
+    if st.session_state.dados['nome_projeto']:
+        st.markdown(f"## Canvas do Projeto: {st.session_state.dados['nome_projeto']}")
+        
+        # Visualização do canvas
+        canvas_img = generate_canvas(st.session_state.dados)
+        st.image(canvas_img, use_column_width=True)
+        
+        # Opções de exportação
+        st.markdown("### Exportar Canvas")
+        col_export = st.columns(3)
+        
+        with col_export[0]:
+            # Converter imagem para bytes para download
+            img_byte_arr = io.BytesIO()
+            canvas_img.save(img_byte_arr, format='PNG')
+            st.download_button(
+                label="📤 Baixar Imagem (PNG)",
+                data=img_byte_arr.getvalue(),
+                file_name=f"canvas_{st.session_state.dados['nome_projeto'].lower().replace(' ', '_')}.png",
+                mime="image/png"
+            )
+        
+        with col_export[1]:
+            # Gerar PDF
+            pdf_bytes = generate_pdf(st.session_state.dados)
+            st.download_button(
+                label="📄 Baixar Relatório (PDF)",
+                data=pdf_bytes,
+                file_name=f"canvas_{st.session_state.dados['nome_projeto'].lower().replace(' ', '_')}.pdf",
+                mime="application/pdf"
+            )
+        
+        with col_export[2]:
+            if st.button("🖨️ Imprimir Canvas", key="print_canvas"):
+                st.success("Use a função de impressão do navegador (Ctrl+P) com a visualização atual")
+    else:
+        st.warning("Por favor, preencha pelo menos o nome do projeto para visualizar o canvas.")
+
+with tab3:
+    st.markdown("## Biblioteca de Templates")
+    st.markdown("Selecione um modelo pré-definido para acelerar seu planejamento:")
+    
+    for template_name, template_data in list(TEMPLATES.items())[1:]:
+        with st.expander(f"📌 {template_name}", expanded=False):
+            st.markdown(f"**Pitch:** {template_data['pitch']}")
+            
+            cols_template = st.columns(2)
+            with cols_template[0]:
+                st.markdown("**Principais Objetivos:**")
+                st.markdown(f"> {template_data['objetivos'].replace('\n', '  \n> ')}")
+                
+                st.markdown("**Produto/Serviço:**")
+                st.markdown(f"> {template_data['produto'].replace('\n', '  \n> ')}")
+            
+            with cols_template[1]:
+                st.markdown("**Entregas Principais:**")
+                st.markdown(f"> {template_data['entregas'].replace('\n', '  \n> ')}")
+                
+                st.markdown("**Equipe:**")
+                st.markdown(f"> {template_data['equipe'].replace('\n', '  \n> ')}")
+            
+            if st.button(f"Aplicar Template {template_name}", key=f"apply_{template_name}"):
+                st.session_state.dados.update(template_data)
+                st.success(f"Template '{template_name}' aplicado com sucesso!")
+                st.rerun()
+
+with tab4:
+    st.markdown("""
+    <div class="guide-section">
+        <h2>🎯 O que é o Project Model Canvas?</h2>
+        <p>O Project Model Canvas é uma ferramenta visual de planejamento estratégico que permite organizar todos os elementos essenciais de um projeto em um único quadro, facilitando a comunicação e o alinhamento entre todas as partes interessadas.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.expander("📌 Como Usar o Canvas", expanded=True):
+        st.markdown("""
+        1. **Comece pelo Propósito**:
+           - Preencha primeiro as seções de Justificativas e Pitch para definir claramente o "porquê" do projeto
+        
+        2. **Detalhe o Que Será Feito**:
+           - Especifique o Produto/Serviço, Objetivos e Requisitos
+        
+        3. **Planeje a Execução**:
+           - Defina Entregas, Cronograma, Equipe e Recursos
+        
+        4. **Considere o Contexto**:
+           - Identifique Stakeholders, Premissas, Riscos e Restrições
+        
+        5. **Revise Regularmente**:
+           - Atualize o canvas conforme o projeto evolui
+        """)
+    
+    with st.expander("📋 Exemplo Completo", expanded=False):
+        st.markdown("""
+        **Projeto:** Plataforma de Educação Digital  
+        
+        **Justificativas:**  
+        • Demanda por capacitação remota  
+        • Oportunidade de mercado em expansão  
+        
+        **Pitch:**  
+        Plataforma SaaS de cursos profissionalizantes com certificação reconhecida.  
+        
+        **Objetivos:**  
+        • Lançar MVP em 6 meses  
+        • 10.000 usuários no primeiro ano  
+        """)
+    
+    st.markdown("---")
+    st.markdown("### 📚 Recursos Adicionais")
+    
+    resources = [
+        {"title": "📖 Guia Completo do Canvas", "description": "Documentação detalhada de cada seção", "url": "#"},
+        {"title": "🎥 Vídeo Tutorial", "description": "Passo a passo para preencher o canvas", "url": "#"},
+        {"title": "📊 Modelo em Excel", "description": "Versão editável para download", "url": "#"}
+    ]
+    
+    for resource in resources:
+        with st.container(border=True):
+            st.markdown(f"#### {resource['title']}")
+            st.markdown(resource['description'])
+            st.markdown(f"[Acessar recurso]({resource['url']})")
 
 # Rodapé
 st.markdown("---")
-st.markdown("<p style='text-align:center;'>© 2024 TecVitória</p>", unsafe_allow_html=True)
+st.markdown(f"""
+<p style='text-align:center; color:{COLORS['primary']};'>
+    © 2024 TecVitória | Desenvolvido com Streamlit e Python
+</p>
+""", unsafe_allow_html=True)
